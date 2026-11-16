@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Mô phỏng 3D thí nghiệm CaCO3 tác dụng với HCl, đo thể tích CO2 và khảo sát các yếu tố ảnh hưởng đến tốc độ phản ứng." />
+  <link rel="icon" href="data:," />
+  <title>Phòng thí nghiệm 3D | CaCO₃ + HCl</title>
+
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">⚗</div>
+        <div>
+          <h1>Phòng thí nghiệm hóa học 3D</h1>
+          <div class="subtitle">Khảo sát tốc độ phản ứng · Calcium carbonate và hydrochloric acid</div>
+        </div>
+      </div>
+      <div class="top-chip">MÔ PHỎNG TƯƠNG TÁC · HÓA HỌC 10</div>
+    </header>
+
+    <section class="equation" aria-label="Phương trình hóa học">
+      <span class="label">PHƯƠNG TRÌNH PHẢN ỨNG</span>
+      <strong>CaCO₃</strong><span class="arrow">+</span><strong>2HCl</strong>
+      <span class="arrow">→</span><strong>CaCl₂</strong><span class="arrow">+</span><strong>CO₂ ↑</strong><span class="arrow">+</span><strong>H₂O</strong>
+    </section>
+
+    <div class="layout">
+      <aside class="panel controls">
+        <h2 class="section-heading">Điều kiện thí nghiệm <small>Đầu vào</small></h2>
+
+        <div class="control">
+          <div class="control-head"><label for="acidRange">Nồng độ HCl</label><output id="acidValue">1,0 M</output></div>
+          <input id="acidRange" type="range" min="0.2" max="2" step="0.1" value="1" />
+          <div class="range-scale"><span>0,2 M</span><span>2,0 M</span></div>
+        </div>
+
+        <div class="control">
+          <div class="control-head"><label for="tempRange">Nhiệt độ</label><output id="tempValue">25 °C</output></div>
+          <input id="tempRange" type="range" min="15" max="55" step="1" value="25" />
+          <div class="range-scale"><span>15 °C</span><span>55 °C</span></div>
+        </div>
+
+        <div class="control">
+          <div class="control-head"><label for="sizeSelect">Kích thước hạt CaCO₃</label></div>
+          <select id="sizeSelect">
+            <option value="0.2">Bột mịn · 0,2 mm</option>
+            <option value="1">Hạt nhỏ · 1 mm</option>
+            <option value="2" selected>Mảnh vừa · 2 mm</option>
+            <option value="5">Mảnh lớn · 5 mm</option>
+          </select>
+        </div>
+
+        <div class="control">
+          <div class="control-head"><label for="massRange">Khối lượng CaCO₃</label><output id="massValue">2,0 g</output></div>
+          <input id="massRange" type="range" min="0.5" max="5" step="0.1" value="2" />
+          <div class="range-scale"><span>0,5 g</span><span>5,0 g</span></div>
+        </div>
+
+        <div class="fixed-note"><span>Thể tích dung dịch HCl</span><strong>100 mL (cố định)</strong></div>
+
+        <div class="btn-row">
+          <button class="btn primary" id="startBtn">▶ Bắt đầu</button>
+          <button class="btn secondary" id="resetBtn">↺ Làm mới</button>
+        </div>
+        <div class="speed-row">
+          <span>Tốc độ mô phỏng</span>
+          <div class="speed-buttons">
+            <button class="speed-btn" data-speed="1">×1</button>
+            <button class="speed-btn active" data-speed="5">×5</button>
+            <button class="speed-btn" data-speed="10">×10</button>
+          </div>
+        </div>
+        <p class="hint">Có thể thay đổi điều kiện trước khi bắt đầu. Khi phản ứng đang chạy, hãy nhấn <b>Làm mới</b> để áp dụng bộ thông số mới.</p>
+      </aside>
+
+      <section class="workspace">
+        <div class="panel visual-panel">
+          <div class="visual-top">
+            <div><div class="visual-title">MÔ HÌNH BÌNH TAM GIÁC</div><div class="visual-sub">Quan sát chất rắn, dung dịch và bọt khí CO₂</div></div>
+            <div class="live-state"><span class="dot" id="stateDot"></span><span id="stateText">Sẵn sàng</span></div>
+          </div>
+          <canvas id="scene"></canvas>
+          <div class="scene-fallback is-visible" id="sceneFallback" role="status" aria-live="polite">
+            <svg class="fallback-flask" viewBox="0 0 360 250" aria-hidden="true">
+              <defs>
+                <linearGradient id="fallbackGlass" x1="0" x2="1" y1="0" y2="1">
+                  <stop offset="0" stop-color="#d7f7ff" stop-opacity=".38"/>
+                  <stop offset="1" stop-color="#70d7ef" stop-opacity=".08"/>
+                </linearGradient>
+                <linearGradient id="fallbackLiquid" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0" stop-color="#63d9ec" stop-opacity=".72"/>
+                  <stop offset="1" stop-color="#167aa8" stop-opacity=".7"/>
+                </linearGradient>
+              </defs>
+              <ellipse cx="180" cy="224" rx="102" ry="12" fill="#4dd8e8" opacity=".12"/>
+              <path d="M151 20 L209 20 L209 90 Q209 102 223 112 Q270 148 260 190 Q253 218 180 218 Q107 218 100 190 Q90 148 137 112 Q151 102 151 90 Z" fill="url(#fallbackGlass)" stroke="#a9e8f5" stroke-width="4"/>
+              <path d="M125 157 Q180 145 235 157 L250 188 Q252 207 180 210 Q108 207 110 188 Z" fill="url(#fallbackLiquid)"/>
+              <path d="M151 20 L209 20 M151 28 L209 28" stroke="#c6f5ff" stroke-width="5" stroke-linecap="round"/>
+              <g fill="#ded7c8" stroke="#b6ad9e" stroke-width="1.5">
+                <path d="M144 191 l13 -12 12 8 -5 14 -16 3 Z"/>
+                <path d="M174 198 l9 -15 13 5 4 13 -13 5 Z"/>
+                <path d="M203 190 l12 -10 11 9 -4 12 -15 2 Z"/>
+                <path d="M166 177 l8 -8 9 4 -2 9 -11 2 Z"/>
+              </g>
+              <g fill="none" stroke="#baf6ff" stroke-width="3" opacity=".9">
+                <circle class="fallback-bubble bubble-a" cx="146" cy="148" r="5"/>
+                <circle class="fallback-bubble bubble-b" cx="191" cy="139" r="7"/>
+                <circle class="fallback-bubble bubble-c" cx="218" cy="151" r="4"/>
+                <circle class="fallback-bubble bubble-d" cx="172" cy="120" r="4"/>
+              </g>
+              <g fill="#8deeff" font-family="Arial,sans-serif" font-size="12" font-weight="700">
+                <text x="269" y="76">CO₂ ↑</text>
+                <text x="20" y="195">CaCO₃</text>
+                <text x="20" y="211" font-size="10" font-weight="400">+ dung dịch HCl</text>
+              </g>
+            </svg>
+            <div class="fallback-copy">
+              <strong>Minh họa phản ứng CaCO₃ + HCl</strong>
+              <span id="sceneFallbackStatus">Đang nạp thư viện 3D. Hình minh họa này được hiển thị trong lúc chờ.</span>
+              <span>Phần mô phỏng, đồ thị và các nút điều khiển vẫn hoạt động độc lập.</span>
+            </div>
+          </div>
+          <div class="scene-caption"><span>Kéo để xoay · Cuộn để phóng to/thu nhỏ</span><span id="sceneTemp">25 °C · 100 mL HCl</span></div>
+        </div>
+
+        <div class="metrics">
+          <div class="panel metric">
+            <div class="metric-label">Thể tích CO₂ hiện tại</div>
+            <div class="metric-value" id="co2Metric">0,0<span class="metric-unit">mL</span></div>
+            <div class="metric-foot" id="co2Theory">Lý thuyết: — mL</div>
+          </div>
+          <div class="panel metric">
+            <div class="metric-label">Thời gian phản ứng</div>
+            <div class="metric-value" id="timeMetric">0,0<span class="metric-unit">s</span></div>
+            <div class="metric-foot">Đạt 99,5% lượng phản ứng tối đa</div>
+          </div>
+          <div class="panel metric">
+            <div class="metric-label">Tốc độ ban đầu của CO₂</div>
+            <div class="metric-value" id="rateMetric">—<span class="metric-unit">mL/s</span></div>
+            <div class="metric-foot">Tính trong giây đầu tiên</div>
+          </div>
+          <div class="panel metric">
+            <div class="metric-label">CaCO₃ rắn còn lại</div>
+            <div class="metric-value" id="massMetric">2,00<span class="metric-unit">g</span></div>
+            <div class="metric-foot" id="massFoot">Ban đầu: 2,00 g</div>
+          </div>
+        </div>
+
+        <div class="bottom-grid">
+          <section class="panel chart-panel">
+            <div class="chart-head">
+              <h2 class="section-heading" style="margin:0">Đồ thị thể tích CO₂ theo thời gian</h2>
+              <div class="chart-legend">
+                <span class="legend-key"><i class="legend-line"></i>Mô phỏng</span>
+                <span class="legend-key"><i class="legend-line real"></i>Thực nghiệm</span>
+              </div>
+            </div>
+            <canvas id="chart" aria-label="Đồ thị thể tích CO2 theo thời gian"></canvas>
+            <div class="chart-foot">Trục hoành: thời gian (s) · Trục tung: thể tích CO₂ (mL). Đường thực nghiệm xuất hiện khi bạn nạp tệp CSV.</div>
+          </section>
+
+          <section class="panel result-panel">
+            <h2 class="section-heading">Kết quả tính toán <small>Giới hạn phản ứng</small></h2>
+            <div class="result-list">
+              <div class="result-row"><span>Chất giới hạn</span><strong id="limitingValue">—</strong></div>
+              <div class="result-row"><span>CO₂ tối đa theo lý thuyết</span><strong id="theoryValue">—</strong></div>
+              <div class="result-row"><span>CaCO₃ đã phản ứng</span><strong id="reactedValue">0,00 g</strong></div>
+              <div class="result-row"><span>HCl còn lại (ước tính)</span><strong id="acidLeftValue">100,0 mmol</strong></div>
+            </div>
+            <div class="progress-wrap">
+              <div class="progress-top"><span>Tiến trình phản ứng</span><strong id="progressText">0%</strong></div>
+              <div class="progress"><div id="progressBar"></div></div>
+            </div>
+            <div class="data-tools">
+              <button class="small-action" id="exportBtn">↓ Xuất CSV mô phỏng</button>
+              <label class="file-label" for="csvInput">↑ Nạp CSV thực nghiệm</label>
+              <input id="csvInput" type="file" accept=".csv,.txt,text/csv,text/plain" />
+              <span class="real-status" id="realStatus">CSV yêu cầu hai cột: time_s,co2_ml</span>
+            </div>
+          </section>
+        </div>
+
+        <div class="note-box">
+          <strong>Lưu ý về mô hình:</strong> Đây là mô phỏng động học gần đúng để so sánh xu hướng, không thay thế phép đo trong phòng thí nghiệm. Thể tích CO₂ được quy đổi về 25 °C và 1 atm; nhiệt độ trong bảng điều khiển làm thay đổi tốc độ phản ứng. Thời gian phản ứng được quy ước là thời điểm đạt 99,5% lượng CO₂ tối đa theo chất giới hạn. Khối lượng còn lại là CaCO₃ chưa phản ứng, không phải tổng khối lượng dung dịch.
+        </div>
+      </section>
+    </div>
+    <footer class="footer">Mô hình học tập · CaCO₃ + 2HCl → CaCl₂ + CO₂ + H₂O</footer>
+  </main>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three.module.js"
+      }
+    }
+  </script>
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>
