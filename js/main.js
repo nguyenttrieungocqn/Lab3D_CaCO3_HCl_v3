@@ -82,9 +82,11 @@ function bootstrap() {
   $("exportBtn").addEventListener("click", () => {
     const points = [ ...model.history ];
     if (points.at(-1)[0] !== model.time) points.push([ model.time, model.co2 ]);
-    const blob = new Blob([ "time_s,co2_ml\n" + points.map(point => point.join(",")).join("\n") ], {
-      type: "text/csv;charset=utf-8"
-    });
+    // Excel on Vietnamese regional settings expects semicolon columns and comma decimals.
+    const csvNumber = value => String(value).replace(".", ",");
+    const csv = "\uFEFFsep=;\ntime_s;co2_ml\n" +
+      points.map(point => point.map(csvNumber).join(";")).join("\n");
+    const blob = new Blob([ csv ], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob), a = document.createElement("a");
     a.href = url;
     a.download = "caco3_hcl_simulation.csv";
@@ -97,11 +99,15 @@ function bootstrap() {
     try {
       if (file.size > 2e6) throw new Error("Tệp vượt quá 2 MB.");
       const lines = (await file.text()).replace(/^\uFEFF/, "").trim().split(/\r?\n/);
-      if (!/^time_s[,;\t]co2_ml\s*$/i.test(lines.shift().trim())) throw new Error("Cần tiêu đề time_s,co2_ml.");
+      if (/^sep=./i.test(lines[0]?.trim() || "")) lines.shift();
+      const header = (lines.shift() || "").trim();
+      const delimiter = header.includes(";") ? ";" : header.includes("\t") ? "\t" : ",";
+      if (!/^time_s\s*[,;\t]\s*co2_ml\s*$/i.test(header)) throw new Error("Cần tiêu đề time_s và co2_ml.");
+      const parseNumber = value => Number(delimiter === ";" ? value.trim().replace(",", ".") : value.trim());
       const points = lines.filter(line => line.trim()).map(line => {
-        const columns = line.trim().split(/[,;\t]/);
+        const columns = line.trim().split(delimiter);
         if (columns.length !== 2 || columns.some(value => !value.trim())) throw new Error("Mỗi dòng cần hai số.");
-        const pair = columns.map(Number);
+        const pair = columns.map(parseNumber);
         if (pair.some(value => !Number.isFinite(value) || value < 0)) throw new Error("Dữ liệu phải là số hữu hạn, không âm.");
         return pair;
       });
